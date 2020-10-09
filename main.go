@@ -21,7 +21,7 @@ func loggedCloser(c io.Closer) {
 	}
 }
 
-func getPemFromApi(domain string) (error, []string) {
+func getCertificateChainHashesApi(domain string) (error, []string) {
 	//goland:noinspection SpellCheckingInspection
 	type CertificateInChain struct {
 		CertificatePem string `json:"certificate_pem"`
@@ -62,7 +62,7 @@ func getPemFromApi(domain string) (error, []string) {
 	return nil, all
 }
 
-func getPemFromLocal(address string) (error, []string) {
+func getCertificateChainHashesLocally(address string) (error, []string) {
 	conn, err := tls.Dial("tcp", address, &tls.Config{
 		InsecureSkipVerify: true,
 	})
@@ -86,19 +86,18 @@ func getPemFromLocal(address string) (error, []string) {
 	return nil, all
 }
 
-func validateCertificate(domain string) bool {
-	e, hashesFromLocal := getPemFromLocal(fmt.Sprintf("%s:443", domain))
+func validateCertificate(domain string) {
+	e, hashesFromLocal := getCertificateChainHashesLocally(fmt.Sprintf("%s:443", domain))
 	if e != nil {
 		panic(e)
 	}
-	e, hashesFromApi := getPemFromApi(domain)
+	e, hashesFromApi := getCertificateChainHashesApi(domain)
 	if e != nil {
 		panic(e)
 	}
 
 	areEqual := reflect.DeepEqual(hashesFromLocal, hashesFromApi)
 	log.Printf("Domain: %s, Certificates matched? %t", domain, areEqual)
-	return areEqual
 }
 
 func main() {
